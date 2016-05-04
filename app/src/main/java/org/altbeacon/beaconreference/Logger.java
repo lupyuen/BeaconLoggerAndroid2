@@ -232,7 +232,7 @@ public class Logger {
             if (body.containsKey("exception"))
                 Log.e(action, output.toString());
             else
-                Log.d(action, output.toString());
+                Log.i(action, output.toString());
             body.put("source", "beaconloggerandroid");
             body.put("action", action);
             body.put("timestamp", new Date());
