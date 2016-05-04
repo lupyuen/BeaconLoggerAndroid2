@@ -8,8 +8,11 @@ import android.app.TaskStackBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.provider.Settings;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+
+import com.firebase.client.Firebase;
 
 import org.altbeacon.beacon.Beacon;
 import org.altbeacon.beacon.BeaconManager;
@@ -36,6 +39,17 @@ public class BeaconReferenceApplication extends Application
 
     public void onCreate() {
         super.onCreate();
+
+        //  This is needed for any code using BeaconController:
+
+        //  Set the device ID to be logged.
+        if (Logger.installationId == null) {
+            Logger.installationId = Settings.Secure.getString(getApplicationContext().getContentResolver(),
+                    Settings.Secure.ANDROID_ID);
+        }
+
+        //  Initialise Firebase.
+        Firebase.setAndroidContext(this);
 
         //  Do the beacon management here.
         if (deviceSupportsBluetooth) {

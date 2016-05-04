@@ -5,11 +5,7 @@ import android.location.LocationListener;
 import android.os.Bundle;
 import android.util.Log;
 
-////  TODO: import com.appkaki.makanpoints.MainApplication;
-////  TODO: import com.appkaki.makanpoints.activity.MainActivity;
-////  TODO: import com.firebase.client.Firebase;
-////  TODO: import com.parse.ParseInstallation;
-////  TODO: import com.parse.ParseUser;
+import com.firebase.client.Firebase;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -28,7 +24,6 @@ public class Logger {
 
     public static String version = null;
     public static String token = null;  //  Security token for authenticating requests to fnbserver.
-    public static String togo_status = null;
     public static String installationId = null;
     public static String user = null;
     public static String userName = null;
@@ -59,11 +54,6 @@ public class Logger {
 
     public Logger()
     {
-        if (installationId == null) {
-            ////  TODO: installationId = ParseInstallation.getCurrentInstallation().getInstallationId();
-            ////  Change to device ID.
-            installationId = "BeaconLoggerAndroid2";
-        }
     }
 
     public Logger copyOutlet()
@@ -83,9 +73,8 @@ public class Logger {
         para.put("starttime", new Date().toString());
         para.put("timestamp", new Date().toString());
         para.put("devicetype", System.getProperty("http.agent"));
-        //  TODO: para.put("deviceuuid"] = UIDevice.currentDevice().identifierForVendor.UUIDString
-        //  TODO: Generate a UUID as installation ID if push notification is disabled.
         para.put("deviceinstallationid", installationId);
+        para.put("deviceid", installationId);
         if (token != null) para.put("token", token);
         if (version != null) para.put("clientversion", version);
 
@@ -200,15 +189,15 @@ public class Logger {
             if (action0 != null) action = action0;
             Logger logger = this;
             {
-                if (logger.installationId != null) body.put("deviceinstallationid", logger.installationId);
-                if (logger.version != null) body.put("clientversion", logger.version);
-                if (logger.user != null) body.put("user", logger.user);
+                if (installationId != null) body.put("deviceinstallationid", installationId);
+                if (version != null) body.put("clientversion", version);
+                if (user != null) body.put("user", user);
                 if (logger.param != null) body.put("params", logger.param);
                 if (logger.outlet != null) body.put("outlet", logger.outlet);
-                if (logger.userName != null) body.put("username", logger.userName);
-                if (logger.userFullname != null) body.put("userfullname", logger.userFullname);
-                if (logger.userEmail != null) body.put("useremail", logger.userEmail);
-                if (logger.userPhone != null) body.put("userphone", logger.userPhone);
+                if (userName != null) body.put("username", userName);
+                if (userFullname != null) body.put("userfullname", userFullname);
+                if (userEmail != null) body.put("useremail", userEmail);
+                if (userPhone != null) body.put("userphone", userPhone);
                 if (logger.magentoOrderId != null) body.put("magentoorderid", logger.magentoOrderId);
                 if (logger.posOrderId != null) body.put("posorderid", logger.posOrderId);
 
@@ -227,7 +216,7 @@ public class Logger {
                 }
                 if (firstKey) firstKey = false;
                 else output.append(", ");
-                output.append(key + ": " + value);
+                output.append(key).append(": ").append(value);
             }
             if (body.containsKey("exception"))
                 Log.e(action, output.toString());
@@ -271,16 +260,16 @@ public class Logger {
             url = url + (body.containsKey("action") ? body.get("action") : "0") + "/";
             url = url + dateTime;
 
-            ////  TODO: final Firebase myFirebaseRef = new Firebase(url);
+            final Firebase myFirebaseRef = new Firebase(url);
             try
             {
-                ////  TODO: myFirebaseRef.push().setValue(body);
+                myFirebaseRef.push().setValue(body);
             }
             catch (Exception ex)
             {
                 //  Sometime can't serialise the complex XML result.  We try without the result.
                 body.put("result", null);
-                ////  TODO: myFirebaseRef.push().setValue(body);
+                myFirebaseRef.push().setValue(body);
             }
         }
         catch (Exception ex)
