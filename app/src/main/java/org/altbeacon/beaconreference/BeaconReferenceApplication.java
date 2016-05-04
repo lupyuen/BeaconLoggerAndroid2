@@ -27,7 +27,9 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Hashtable;
 
-public class BeaconReferenceApplication extends Application implements BootstrapNotifier {
+public class BeaconReferenceApplication extends Application
+        //implements BootstrapNotifier
+{
     private static final String TAG = "BeaconReferenceApp";
     private RegionBootstrap regionBootstrap;
     private BackgroundPowerSaver backgroundPowerSaver;
@@ -35,20 +37,17 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
     private MonitoringActivity monitoringActivity = null;
 
     //  Added by Lup Yuen.
+    public static BeaconController beaconController = null;
+    public static boolean deviceSupportsBluetooth = true;
+
     static final HashSet<String> defaultBeacons = new HashSet<String>() {{ add("b9407f30-f5f8-466e-aff9-25556b57fe6d"); }};  //  Estimote.
     static final String beaconIdentifierPrefix = "com.appkaki.makanpoints";
     static int beaconIdentifierIndex = 0;
     static HashSet<String> allBeacons = new HashSet<String>();
     static Hashtable<String, Region> allRegions = new Hashtable<>();
     static Hashtable<String, RegionBootstrap> allRegionBootstraps = new Hashtable<>();
-    static HashSet<String> activeRegions = new HashSet<>();  //  Regions that the user is currently in.
-    static HashSet<String> activeBeacons = new HashSet<>();  //  All the beacons that have been detected.
-    static Hashtable<String, Double> activeBeaconsDistance = new Hashtable<>();  //  The min distances of all beacons detected.
 
-    private BeaconManager beaconManager = null;
-    private Activity activity = null;
-    private Application application = null;
-
+    /*
     void registerBeacons() {
         //  Register beacons to be detected.
         //  Register the default beacons.
@@ -71,7 +70,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         Logger req = Logger.startLog(TAG + "_registerBeacon", new Hashtable<String, Object>() {{ put("beaconuuid", beaconuuid); }});
         try {
             if (allBeacons.contains(beaconuuid)) {
-                ////req.success("Already registered, skipping " + beaconuuid, new Hashtable<String, Object>() {{ put("beaconuuid", beaconuuid); }});
+                req.success("Already registered, skipping " + beaconuuid, new Hashtable<String, Object>() {{ put("beaconuuid", beaconuuid); }});
                 return;
             }
             final String beaconregion = beaconIdentifierPrefix + beaconIdentifierIndex;
@@ -87,7 +86,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
             req.error(ex, new Hashtable<String, Object>() {{ put("beaconuuid", beaconuuid); }});
         }
     }
-
+    */
 
     //////////////////////////////////////////////////////////////
 
@@ -95,6 +94,17 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
     //  This is the original demo code.
     public void onCreate() {
         super.onCreate();
+
+        //  Do the beacon management here.
+        if (deviceSupportsBluetooth) {
+            beaconController = new BeaconController(this);
+            // simply constructing this class and holding a reference to it in your custom Application
+            // class will automatically cause the BeaconLibrary to save battery whenever the application
+            // is not visible.  This reduces bluetooth power usage by about 60%
+            backgroundPowerSaver = new BackgroundPowerSaver(this);
+        }
+
+        /*
         beaconManager = org.altbeacon.beacon.BeaconManager.getInstanceForApplication(this);
 
         // By default the AndroidBeaconLibrary will only find AltBeacons.  If you wish to make it
@@ -115,23 +125,22 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
         Log.i(TAG, "setting up background monitoring for beacons and power saving");
         // wake up the app when a beacon is seen
         registerBeacons();
-        /*
         Region region = new Region("backgroundRegion",
                 null, null, null);
         regionBootstrap = new RegionBootstrap(this, region);
-        */
 
         // simply constructing this class and holding a reference to it in your custom Application
         // class will automatically cause the BeaconLibrary to save battery whenever the application
         // is not visible.  This reduces bluetooth power usage by about 60%
-        ////  TODO: Why does this crash?
         backgroundPowerSaver = new BackgroundPowerSaver(this);
 
         // If you wish to test beacon detection in the Android Emulator, you can use code like this:
         // BeaconManager.setBeaconSimulator(new TimedBeaconSimulator() );
         // ((TimedBeaconSimulator) BeaconManager.getBeaconSimulator()).createTimedSimulatedBeacons();
+        */
     }
 
+    /*
     @Override
     public void didEnterRegion(Region arg0) {
         // In this example, this class sends a notification to the user whenever a Beacon
@@ -198,6 +207,7 @@ public class BeaconReferenceApplication extends Application implements Bootstrap
                 (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(1, builder.build());
     }
+    */
 
     public void setMonitoringActivity(MonitoringActivity activity) {
         this.monitoringActivity = activity;
