@@ -6,11 +6,11 @@
 *.dex
 
 # Java class files
-*.class
-.gradle
-local.properties
-app/*
-build/*
+#*.class
+#.gradle
+#local.properties
+#app/*
+#build/*
 
 # generated files
 bin/
