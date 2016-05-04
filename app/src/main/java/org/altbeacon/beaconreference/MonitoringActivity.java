@@ -32,22 +32,63 @@ import java.util.Hashtable;
  * @author Matt Tyler
  */
 public class MonitoringActivity extends Activity
-    implements BeaconConsumer ////
 {
-	protected static final String TAG = "MonitoringActivity";
+    //  Lup Yuen: Added code:
+
+    private BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this);
+
+    //  Callback from BeaconController when region is entered.
+    public void didEnterRegion(final Region region) {
+        String[] regionInfo = BeaconController.getRegionInfo(region);
+        logToDisplay("Enter region " + regionInfo[0] + " / " + regionInfo[1] + " / " + regionInfo[2]);
+    }
+
+    //  Callback from BeaconController when region is exited.
+    public void didExitRegion(final Region region) {
+        String[] regionInfo = BeaconController.getRegionInfo(region);
+        logToDisplay("Exit region " + regionInfo[0] + " / " + regionInfo[1] + " / " + regionInfo[2]);
+    }
+
+    //  Callback from BeaconController when beacons have been ranged.
+    public void didDetectBeacons(final String beacons) {
+        logToDisplay("Detected beacons " + beacons);
+    }
+
+    private void logToDisplay(final String line) {
+        runOnUiThread(new Runnable() {
+            public void run() {
+                EditText editText = (EditText)MonitoringActivity.this
+                        .findViewById(R.id.monitoringText);
+                editText.append(line+"\n");
+            }
+        });
+    }
+
+    //  Lup Yuen: Original AltBeacon code:
+
+    protected static final String TAG = "MonitoringActivity";
 	private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
 
 
-	@Override
+    @Override
+    public void onResume() {
+        super.onResume();
+        BeaconController.activity = this;  //  Need this so that BeaconController can callback.
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        BeaconController.activity = null;  //  Need this so that BeaconController can callback.
+    }
+
+    @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		Log.d(TAG, "onCreate");
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_monitoring);
 		verifyBluetooth();
         logToDisplay("Application just launched");
-
-		////  TODO
-		beaconManager.bind(this);
 
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // Android M Permission check
@@ -102,18 +143,6 @@ public class MonitoringActivity extends Activity
 		this.startActivity(myIntent);
 	}
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        ((BeaconReferenceApplication) this.getApplicationContext()).setMonitoringActivity(this);
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        ((BeaconReferenceApplication) this.getApplicationContext()).setMonitoringActivity(null);
-    }
-
 	private void verifyBluetooth() {
 
 		try {
@@ -151,74 +180,7 @@ public class MonitoringActivity extends Activity
 			
 		}
 		
-	}	
-
-    public void logToDisplay(final String line) {
-    	runOnUiThread(new Runnable() {
-    	    public void run() {
-    	    	EditText editText = (EditText)MonitoringActivity.this
-    					.findViewById(R.id.monitoringText);
-       	    	editText.append(line+"\n");            	    	    		
-    	    }
-    	});
-    }
-
-	//  Lup Yuen: Added code:
-
-	private BeaconManager beaconManager = BeaconManager.getInstanceForApplication(this);
-
-	@Override
-	public void onBeaconServiceConnect() {
-		beaconManager.setRangeNotifier(new RangeNotifier() {
-			@Override
-			public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
-				if (beacons.size() > 0) {
-					//EditText editText = (EditText)RangingActivity.this.findViewById(R.id.rangingText);
-					Beacon firstBeacon = beacons.iterator().next();
-					logToDisplay("The first beacon " + firstBeacon.toString() + " is about " + firstBeacon.getDistance() + " meters away.");
-				}
-			}
-
-		});
-
-		beaconManager.setMonitorNotifier(new MonitorNotifier() {
-			@Override
-			public void didEnterRegion(Region region) {
-				final String[] regionInfo = getRegionInfo(region); final String beaconregion = regionInfo[0]; final String beaconuuid = regionInfo[1]; final String beaconmajor = regionInfo[2]; final String beaconminor = regionInfo[3];
-				final Logger req = Logger.startLog(TAG + "_didEnterRegion2", new Hashtable<String, Object>() {{ put("beaconregion", beaconregion); put("beaconuuid", beaconuuid); put("beaconmajor", beaconmajor); put("beaconminor", beaconminor); }});
-				////  TODO: MainApplication.beaconController.didEnterRegion(region);
-			}
-
-			@Override
-			public void didExitRegion(Region region) {
-				final String[] regionInfo = getRegionInfo(region); final String beaconregion = regionInfo[0]; final String beaconuuid = regionInfo[1]; final String beaconmajor = regionInfo[2]; final String beaconminor = regionInfo[3];
-				final Logger req = Logger.startLog(TAG + "_didExitRegion2", new Hashtable<String, Object>() {{ put("beaconregion", beaconregion); put("beaconuuid", beaconuuid); put("beaconmajor", beaconmajor); put("beaconminor", beaconminor); }});
-				////  TODO: MainApplication.beaconController.didExitRegion(region);
-			}
-
-			@Override
-			public void didDetermineStateForRegion(int state, Region region) {
-				final Logger req = Logger.startLog(TAG + "_didDetermineStateForRegion2");
-				////  TODO: MainApplication.beaconController.didDetermineStateForRegion(state, region);
-			}
-		});
 	}
 
 
-	public String[] getRegionInfo(Region region) {
-		//  Return the region ID, UUID, major, minor for the region.
-		String beaconregion = ""; String beaconuuid = ""; String beaconmajor = ""; String beaconminor = "";
-		try {
-			if (region != null) {
-				if (region.getUniqueId() != null) beaconregion = region.getUniqueId();
-				if (region.getId1() != null) beaconuuid = region.getId1().toHexString();
-				if (region.getId2() != null) beaconmajor = region.getId2().toString();
-				if (region.getId3() != null) beaconminor = region.getId3().toString();
-			}
-		}
-		catch (Exception ex) {
-			Log.e(TAG, "getRegionInfo: " + ex.toString());
-		}
-		return new String[] { beaconregion, beaconuuid, beaconmajor, beaconminor };
-	}
 }

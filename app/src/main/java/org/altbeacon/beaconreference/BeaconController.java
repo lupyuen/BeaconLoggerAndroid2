@@ -1,6 +1,5 @@
 package org.altbeacon.beaconreference;
 
-import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
@@ -41,7 +40,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
     static boolean haveDetectedBeaconsSinceBoot = false;
 
     private BeaconManager beaconManager = null;
-    private Activity activity = null;
+    public static MonitoringActivity activity = null;
     private Application application = null;
 
     public BeaconController(Application application0) {
@@ -114,6 +113,31 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
         }
     }
 
+    //  Range all beacons for a short while then stop.
+    public void rangeBeaconsBriefly() {
+        final Logger req = Logger.startLog(TAG + "_rangeBeaconsBriefly");
+        startRangingBeacons();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(10 * 1000);
+                } catch (InterruptedException e) {
+                }
+                final String beacons = BeaconReferenceApplication.beaconController.stopRangingBeacons();
+                //  Report to activity about the beacons detected.
+                if (activity != null) {
+                    activity.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            activity.didDetectBeacons(beacons);
+                        }
+                    });
+                }
+                req.success();
+            }
+        }).start();
+    }
 
     public void startRangingBeacons() {
         //  Monitor and range all the beacons that we know.
@@ -172,6 +196,8 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
         final String[] regionInfo = getRegionInfo(region); final String beaconregion = regionInfo[0]; final String beaconuuid = regionInfo[1]; final String beaconmajor = regionInfo[2]; final String beaconminor = regionInfo[3];
         final Logger req = Logger.startLog(TAG + "_didEnterRegion", new Hashtable<String, Object>() {{ put("beaconregion", beaconregion); put("beaconuuid", beaconuuid); put("beaconmajor", beaconmajor); put("beaconminor", beaconminor); }});
         try {
+            //  Range all regions briefly.
+            rangeBeaconsBriefly();
             if (!haveDetectedBeaconsSinceBoot) {
                 haveDetectedBeaconsSinceBoot = true;
                 // The very first time since boot that we detect an beacon, we launch the MainActivity
@@ -187,7 +213,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
                 if (activity != null) {
                     // If the Monitoring Activity is visible, we log info about the beacons we have
                     // seen on its display
-                    //activity.logToDisplay("I see a beacon again" );
+                    activity.didEnterRegion(region);
                 } else {
                     // If we have already seen beacons before, but the monitoring activity is not in
                     // the foreground, we send a notification to the user on subsequent detections.
@@ -210,9 +236,16 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
         final String[] regionInfo = getRegionInfo(region); final String beaconregion = regionInfo[0]; final String beaconuuid = regionInfo[1]; final String beaconmajor = regionInfo[2]; final String beaconminor = regionInfo[3];
         final Logger req = Logger.startLog(TAG + "_didExitRegion", new Hashtable<String, Object>() {{ put("beaconregion", beaconregion); put("beaconuuid", beaconuuid); put("beaconmajor", beaconmajor); put("beaconminor", beaconminor); }});
         try {
+            //  Range all regions briefly.
+            rangeBeaconsBriefly();
             if (activeRegions.contains(beaconregion)) activeRegions.remove(beaconregion);
             final StringBuilder activeRegionsStr = new StringBuilder();
             for (String s: activeRegions)  { activeRegionsStr.append(s + ","); }
+            if (activity != null) {
+                // If the Monitoring Activity is visible, we log info about the beacons we have
+                // seen on its display
+                activity.didExitRegion(region);
+            }
             req.success(new Hashtable<String, Object>() {{ put("activeRegions", activeRegionsStr.toString()); put("beaconregion", beaconregion); put("beaconuuid", beaconuuid); put("beaconmajor", beaconmajor); put("beaconminor", beaconminor); }});
         }
         catch (Exception ex) {
@@ -242,6 +275,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
             final String beaconmajor = beaconInfo[1];
             final String beaconminor = beaconInfo[2];
             final String beacondistance = beaconInfo[3];
+            final String beaconrssi = beaconInfo[4];
             String beaconid = beaconuuid + "," + beaconmajor + "," + beaconminor;
             activeBeacons.add(beaconid);
             //  Remember the max distance for the beacon.
@@ -258,6 +292,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
                 put("beaconmajor", beaconmajor);
                 put("beaconminor", beaconminor);
                 put("beacondistance", beacondistance);
+                put("beaconrssi", beaconrssi);
             }});
         }
         req.success(new Hashtable<String, Object>() {{
@@ -305,24 +340,26 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
         }
     }
 
-    public String[] getBeaconInfo(Beacon beacon) {
+    public static String[] getBeaconInfo(Beacon beacon) {
         //  Return the region ID, UUID, major, minor for the region.
         String beaconuuid = ""; String beaconmajor = ""; String beaconminor = "";  String beacondistance = "";
+        String beaconrssi = "";
         try {
             if (beacon != null) {
                 if (beacon.getId1() != null) beaconuuid = beacon.getId1().toHexString();
                 if (beacon.getId2() != null) beaconmajor = beacon.getId2().toString();
                 if (beacon.getId3() != null) beaconminor = beacon.getId3().toString();
                 beacondistance = new DecimalFormat("0.0").format(beacon.getDistance());
+                beaconrssi = new DecimalFormat("0.0").format(beacon.getRssi());
             }
         }
         catch (Exception ex) {
             Log.e(TAG, "getBeaconInfo: " + ex.toString());
         }
-        return new String[] { beaconuuid, beaconmajor, beaconminor, beacondistance };
+        return new String[] { beaconuuid, beaconmajor, beaconminor, beacondistance, beaconrssi };
     }
 
-    public String[] getRegionInfo(Region region) {
+    public static String[] getRegionInfo(Region region) {
         //  Return the region ID, UUID, major, minor for the region.
         String beaconregion = ""; String beaconuuid = ""; String beaconmajor = ""; String beaconminor = "";
         try {
@@ -339,7 +376,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
         return new String[] { beaconregion, beaconuuid, beaconmajor, beaconminor };
     }
 
-    public void setActivity(Activity activity0) {
+    public void setActivity(MonitoringActivity activity0) {
         //  Called by MainApplication to set the activity.
         activity = activity0;
     }

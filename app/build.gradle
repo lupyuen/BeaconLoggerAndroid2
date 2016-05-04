@@ -22,4 +22,5 @@ dependencies {
     compile 'com.android.support:support-v4:+'
     //compile project(':android-beacon-library')
     compile 'org.altbeacon:android-beacon-library:2+'
+    compile 'com.firebase:firebase-client-android:2.5.2+'
 }
