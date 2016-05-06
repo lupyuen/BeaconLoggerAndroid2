@@ -31,9 +31,9 @@ public class LoggingBeaconParser extends BeaconParser {
             Log.i(TAG, resultBeacon == null ? "NULL" : resultBeacon.toString());
             if (resultBeacon == null) return null;
             final Logger req = Logger.startLog(TAG + "_fromScanData", new Hashtable<String, Object>() {{
-                put("beaconuuid", resultBeacon.getId1() == null ? "NULL" : resultBeacon.getId1());
-                put("beaconmajor", resultBeacon.getId2() == null ? "NULL" : resultBeacon.getId2());
-                put("beaconminor", resultBeacon.getId3() == null ? "NULL" : resultBeacon.getId3());
+                put("beaconuuid", resultBeacon.getId1() == null ? "NULL" : resultBeacon.getId1().toHexString());
+                put("beaconmajor", resultBeacon.getId2() == null ? "NULL" : resultBeacon.getId2().toString());
+                put("beaconminor", resultBeacon.getId3() == null ? "NULL" : resultBeacon.getId3().toString());
                 put("beacondistance", new DecimalFormat("0.0").format(resultBeacon.getDistance()));
                 put("beaconrssi", rssi);
                 put("beacontypecode", resultBeacon.getBeaconTypeCode());
