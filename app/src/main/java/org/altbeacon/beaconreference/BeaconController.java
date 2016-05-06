@@ -62,6 +62,29 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
             beaconManager.getBeaconParsers().clear();
             beaconManager.getBeaconParsers().add(new LoggingBeaconParser().setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
 
+            /*
+            How do I customize the background scan rate?
+            You may alter the default background scan period and the time between scans using the methods on the
+            BeaconManager class. Doing this is easy, but be careful. The longer you wait between scans, the longer
+            it will take to detect a beacon. And the more reduce the length of the scan, the more likely it is that
+            you might miss an advertisement from an beacon. We recommend not reducing the scan period to be less than
+            1.1 seconds, since many beacons only transmit at a frequency of 1 Hz. But keep in mind that the radio may
+            miss a single beacon advertisement, which is why we make the default background scan period 10 seconds to
+            make extra, extra sure that any transmitting beacons get detected. Below is an example of a rather extreme
+            battery savings configuration:
+             */
+            //  Set the duration of the scan to be 1.1 seconds
+            beaconManager.setBackgroundScanPeriod(1100l);
+            //  Set the time between each scan to be 10 seconds
+            beaconManager.setBackgroundBetweenScanPeriod(10000l);
+
+            //  Never use power saver.  This will overwrite above settings.
+            // simply constructing this class and holding a reference to it in your custom Application
+            // class will automatically cause the BeaconLibrary to save battery whenever the application
+            // is not visible.  This reduces bluetooth power usage by about 60%
+            //backgroundPowerSaver = new BackgroundPowerSaver(this);
+            //Log.i(TAG, "Power Saver is on: " + backgroundPowerSaver.toString());
+
             //  Wake up the app when a beacon is seen.
             registerBeacons();
 
