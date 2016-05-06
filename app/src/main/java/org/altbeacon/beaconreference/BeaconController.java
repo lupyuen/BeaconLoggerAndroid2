@@ -76,6 +76,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
             //  Set the duration of the scan to be 1.1 seconds
             beaconManager.setBackgroundScanPeriod(1100l);
             //  Set the time between each scan to be 10 seconds
+            //  TODO: Scan more often if superbeacon pattern is detected.
             beaconManager.setBackgroundBetweenScanPeriod(10000l);
 
             //  Never use power saver.  This will overwrite above settings.
@@ -109,7 +110,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
         }
         ////  TODO: Get the beacons from the server.  Comma-separated string.
         ////final String beacons = config.getString("monitorBeacons");
-        final String beacons = "8492e75f-4fd6-469d-b132-043fe94921d8";  //  Estimote simulator.
+        final String beacons = "8492e75f-4fd6-469d-b132-043fe94921d8,b9407f30-f5f8-466e-aff9-25556b57fe6c";  //  Estimote simulator + Test beacon.
         if (beacons != null && beacons.length() > 0) {
             req.log(TAG + "_registerBeacons", new Hashtable<String, Object>() {{ put("beacons", beacons); }});
             for (String beaconuuid: beacons.split(",")) {
