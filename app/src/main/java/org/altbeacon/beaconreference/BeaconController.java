@@ -26,7 +26,7 @@ import java.util.Hashtable;
  * Created by Luppy on 26/4/15.
  */
 public class BeaconController implements BeaconConsumer, BootstrapNotifier {
-    //  Manages the ranging and detection of beacons.
+    //  This class manages the monitoring and ranging of beacons.
     protected static final String TAG = "BeaconController";
     static final HashSet<String> defaultBeacons = new HashSet<String>() {{ add("b9407f30-f5f8-466e-aff9-25556b57fe6d"); }};
     static final String beaconIdentifierPrefix = "com.appkaki.makanpoints";
@@ -42,6 +42,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
     private BeaconManager beaconManager = null;
     public static MonitoringActivity activity = null;
     private Application application = null;
+    static RegionBootstrap regionBootstrap = null;
 
     public BeaconController(Application application0) {
         application = application0;
@@ -61,7 +62,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
 
             //  For Apple iBeacon specification.  Note the final "d" field.
             beaconManager.getBeaconParsers().clear();
-            beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
+            beaconManager.getBeaconParsers().add(new LoggingBeaconParser().setBeaconLayout("m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24,d:25-25"));
 
             //  Wake up the app when a beacon is seen.
             registerBeacons();
@@ -95,17 +96,34 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
         //  Register the beacon for region monitoring and bootstrap.
         Logger req = Logger.startLog(TAG + "_registerBeacon", new Hashtable<String, Object>() {{ put("beaconuuid", beaconuuid); }});
         try {
-            if (allBeacons.contains(beaconuuid)) {
+            if (regionBootstrap != null) {
+            //if (allBeacons.contains(beaconuuid)) {
                 req.success("Already registered, skipping " + beaconuuid, new Hashtable<String, Object>() {{ put("beaconuuid", beaconuuid); }});
                 return;
             }
             final String beaconregion = beaconIdentifierPrefix + beaconIdentifierIndex;
             beaconIdentifierIndex++;
             Region region = new Region(beaconregion, Identifier.parse(beaconuuid), null, null);
-            RegionBootstrap regionBootstrap = new RegionBootstrap(this, region);
-            allBeacons.add(beaconuuid);
-            allRegions.put(beaconregion, region);
-            allRegionBootstraps.put(beaconregion, regionBootstrap);
+            /* RegionBootstrap */ regionBootstrap = new RegionBootstrap(this, region);
+            //allBeacons.add(beaconuuid);
+            //allRegions.put(beaconregion, region);
+            //allRegionBootstraps.put(beaconregion, regionBootstrap);
+
+            /*
+            Applications that implement the library’s RegionBootstrap class will automatically restart in the b
+            ackground to look for beacons as soon as possible. This restart is guaranteed to happen after reboot or
+            after connecting/disconnecting the device to a charger. (The latter guarantee is implemented in library
+            version 1.1.4 or higher.) Since users must typically charge their devices once per day, this means that
+            applications implementing the RegionBootstrap will be looking for beacons each day the device is powered,
+            and will typically continue to do so unless the user does a force stop of the app on that day.
+
+            IMPORTANT NOTE: The RegionBootstrap class registers an internal MonitorNotifier with the BeaconManager.
+            If you use the RegionBootstrap, your application must not manually register a second MonitorNotifier,
+            otherwise it will unregister the one configured by the RegionBootstrap, effectively disabling it. When
+            using the RegionBootstrap, any custom monitoring code must therefore be placed in the callback methods in
+            the BootstrapNotifier implementation passed to the RegionBootstrap.
+             */
+
             req.success("Registered " + beaconuuid + " with region " + beaconregion, new Hashtable<String, Object>() {{ put("beaconuuid", beaconuuid); put("beaconregion", beaconregion); }});
         }
         catch (Exception ex) {
@@ -197,7 +215,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
         final Logger req = Logger.startLog(TAG + "_didEnterRegion", new Hashtable<String, Object>() {{ put("beaconregion", beaconregion); put("beaconuuid", beaconuuid); put("beaconmajor", beaconmajor); put("beaconminor", beaconminor); }});
         try {
             //  Range all regions briefly.
-            rangeBeaconsBriefly();
+            ////rangeBeaconsBriefly();
             if (!haveDetectedBeaconsSinceBoot) {
                 haveDetectedBeaconsSinceBoot = true;
                 // The very first time since boot that we detect an beacon, we launch the MainActivity
@@ -304,6 +322,8 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
     public void onBeaconServiceConnect() {
         final Logger req = Logger.startLog(TAG + "_onBeaconServiceConnect");
         try {
+            //  RegionBootstrap doesn't allow us to register another monitor notifier, so this code is commented out.
+            /*
             beaconManager.setRangeNotifier(new RangeNotifier() {
                 @Override
                 public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
@@ -333,6 +353,7 @@ public class BeaconController implements BeaconConsumer, BootstrapNotifier {
                     BeaconReferenceApplication.beaconController.didDetermineStateForRegion(state, region);
                 }
             });
+            */
             req.success();
         }
         catch (Exception ex) {
